@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit profile | ConnectHub</title>
+    <link rel="stylesheet" href="{% static 'social/style.css' %}">
+</head>
+<body class="auth-page">
+    <nav class="navbar">
+        <a class="brand" href="{% url 'home' %}">ConnectHub</a>
+        <a href="{% url 'profile' request.user.username %}">View profile</a>
+    </nav>
+    <main class="auth-container">
+        <section class="auth-card">
+            <h1>Edit your profile</h1>
+            <p class="field-help">Update the name and bio other members see on your profile.</p>
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="form-errors" role="alert">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% if form.non_field_errors %}
+                    <div class="form-errors" role="alert">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <button class="primary-button" type="submit">Save profile</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

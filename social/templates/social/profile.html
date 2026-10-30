@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Connect with {{ profile_user.username }} on ConnectHub.">
+    <title>@{{ profile_user.username }} | ConnectHub</title>
+    <link rel="stylesheet" href="{% static 'social/style.css' %}">
+    <script src="{% static 'social/script.js' %}" defer></script>
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand-block">
+                <div class="brand-mark" aria-hidden="true"><span class="brand-ring"></span></div>
+                <a class="brand-name" href="{% url 'home' %}">ConnectHub</a>
+            </div>
+            <nav class="sidebar-nav" aria-label="Main navigation">
+                <a class="nav-item" href="{% url 'home' %}"><span class="nav-icon">⌂</span><span>Home</span></a>
+                <a class="nav-item active" href="#profile"><span class="nav-icon">◉</span><span>Profile</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button class="nav-item logout-item" type="submit"><span class="nav-icon">↩</span><span>Log Out</span></button>
+                    </form>
+                {% else %}
+                    <a class="nav-item" href="{% url 'login' %}">Log in</a>
+                    <a class="nav-item" href="{% url 'register' %}">Create an account</a>
+                {% endif %}
+            </div>
+        </aside>
+        <div class="content-panel">
+            <header class="topbar">
+                <a class="search-box back-link" href="{% url 'home' %}">Back to the community feed</a>
+            </header>
+            <main class="dashboard profile-dashboard">
+                <section class="main-column">
+                    <section class="card profile-card" id="profile">
+                        <div class="cover-banner"></div>
+                        <div class="profile-body">
+                            <div class="avatar profile-avatar" aria-hidden="true">{{ profile_user.get_full_name|default:profile_user.username|first|upper }}</div>
+                            <div class="profile-head-row">
+                                <div class="profile-meta">
+                                    <h2>{{ profile_user.get_full_name|default:profile_user.username }}</h2>
+                                    <span class="profile-handle">@{{ profile_user.username }}</span>
+                                </div>
+                                {% if user.is_authenticated and user.pk == profile_user.pk %}
+                                    <a class="edit-button" href="{% url 'edit_profile' %}">Edit Profile</a>
+                                {% elif user.is_authenticated %}
+                                    <div class="suggestion profile-follow" data-follow-url="{% url 'toggle_follow' profile_user.pk %}">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <button class="follow-button{% if is_following %} following{% endif %}" type="button" aria-pressed="{{ is_following|yesno:'true,false' }}">
+                                            {% if is_following %}Following{% else %}Follow{% endif %}
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <a class="edit-button" href="{% url 'login' %}">Follow</a>
+                                {% endif %}
+                            </div>
+                            <p class="intro-text">{{ profile_user.bio|default:"This member hasn't added a bio yet." }}</p>
+                            <div class="profile-stats" aria-label="Profile statistics">
+                                <span><strong>{{ post_count }}</strong> post{{ post_count|pluralize }}</span>
+                                <span><strong class="follower-count">{{ follower_count }}</strong> follower{{ follower_count|pluralize }}</span>
+                                <span><strong>{{ following_count }}</strong> following</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <h2 class="feed-heading">Posts by @{{ profile_user.username }}</h2>
+                    <div id="posts-container" aria-live="polite">
+                        {% for post in posts %}
+                            <article class="card post" data-post-id="{{ post.pk }}" data-like-url="{% url 'toggle_like' post.pk %}" data-comment-url="{% url 'create_comment' post.pk %}">
+                                <div class="post-header">
+                                    <div class="avatar">{{ profile_user.get_full_name|default:profile_user.username|first|upper }}</div>
+                                    <div class="post-author">
+                                        <strong>{{ profile_user.get_full_name|default:profile_user.username }}</strong>
+                                        <span class="muted">@{{ profile_user.username }} · {{ post.created_at|date:"M j, Y H:i" }}</span>
+                                    </div>
+                                </div>
+                                <p class="post-text">{{ post.content }}</p>
+                                <div class="post-stats">
+                                    <span class="like-count">{{ post.likes.count }} like{{ post.likes.count|pluralize }}</span>
+                                    <span class="comment-count">{{ post.comments.count }} comment{{ post.comments.count|pluralize }}</span>
+                                </div>
+                                {% if user.is_authenticated %}
+                                    <div class="post-actions">
+                                        <button type="button" class="action-button like-button" aria-pressed="{% if user in post.likes.all %}true{% else %}false{% endif %}">
+                                            {% if user in post.likes.all %}♥ Liked{% else %}♡ Like{% endif %}
+                                        </button>
+                                        <button type="button" class="action-button comment-toggle">Comment</button>
+                                    </div>
+                                    <form class="comment-form hidden">
+                                        {% csrf_token %}
+                                        <label class="sr-only">Write a comment</label>
+                                        <input name="comment" maxlength="300" placeholder="Write a comment..." required>
+                                        <button type="submit" class="primary-button">Send</button>
+                                    </form>
+                                {% else %}
+                                    <p class="muted"><a href="{% url 'login' %}">Log in</a> to like or comment.</p>
+                                {% endif %}
+                                <div class="comments-list">
+                                    {% for comment in post.comments.all %}
+                                        <p class="comment-item"><strong>{{ comment.author.get_full_name|default:comment.author.username }}:</strong> {{ comment.content }}</p>
+                                    {% endfor %}
+                                </div>
+                            </article>
+                        {% empty %}
+                            <p class="empty-message">No posts yet.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
